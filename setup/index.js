@@ -1,38 +1,61 @@
 const { randomBytes } = require('crypto');
 const ed25519 = require('ed25519');
+const fs = require('fs');
 
-// Generate a random 32-byte seed for the keypair
-const seed = randomBytes(32); // 32 bytes for Ed25519 keypair
+// Function to generate the keypair and convert it to vector<u8> format
+function generateKeyPairAndConvertToVector() {
+    const seed = randomBytes(32); // Generate a random 32-byte seed for the Ed25519 keypair
+    const keyPair = ed25519.MakeKeypair(seed);
 
-// Generate the keypair
-const keyPair = ed25519.MakeKeypair(seed);
+    return {
+        publicKey: Array.from(keyPair.publicKey),
+        privateKey: Array.from(keyPair.privateKey),
+    };
+}
 
-// Get the public key as a Buffer and convert it to an array of integers (u8)
-const publicKey = keyPair.publicKey;
-const privateKey = keyPair.privateKey;
+// Convert a string message to a vector<u8>
+function toMessageVector(message) {
+    return Array.from(Buffer.from(message, 'utf-8'));
+}
 
-// Convert the keys to vectors (arrays of integers)
-const publicKeyArray = Array.from(publicKey);
-const privateKeyArray = Array.from(privateKey);
+// Convert buffer to hex format
+function toHexFormat(buffer) {
+    return "0x" + buffer.toString('hex');
+}
 
-// Generate a message (can be any string or data you want to sign)
-const message = 'Hello, this is a test message!';
-const messageArray = Array.from(Buffer.from(message, 'utf-8')); // Convert the message to a vector<u8>
+// Function to display vector<u8> formatted output
+function displayVectorU8(name, vector, logStream) {
+    const output = `const ${name}: vector<u8> = vector[\n${vector.join(',\n')}\n];\n`;
+    logStream.write(output); // Save to file
+    console.log(output); // Print to console
+}
 
-// Output the public key, private key, and message in the desired format
-console.log('const ADMIN_PUBKEY: vector<u8> = vector[');
-console.log(publicKeyArray.join(',\n'));
-console.log('];');
+// Function to display hex output
+function displayHex(name, buffer, logStream) {
+    const output = `const ${name}_HEX: string = "${toHexFormat(buffer)}";\n`;
+    logStream.write(output); // Save to file
+    console.log(output); // Print to console
+}
 
-console.log('const ADMIN_PRIVKEY: vector<u8> = vector[');
-console.log(privateKeyArray.join(',\n'));
-console.log('];');
+// Main function to generate keys and message, then display the results
+function generateAndDisplay() {
+    const logStream = fs.createWriteStream('output.log', { flags: 'w' }); // Open output file stream
+    const { publicKey, privateKey } = generateKeyPairAndConvertToVector();
+    const message = 'Hello, this is a test message!';
+    const messageArray = toMessageVector(message);
 
-console.log('const MESSAGE: vector<u8> = vector[');
-console.log(messageArray.join(',\n'));
-console.log('];');
+    // Display the keys and message in vector<u8> format
+    displayVectorU8('ADMIN_PUBKEY', publicKey, logStream);
+    displayVectorU8('ADMIN_PRIVKEY', privateKey, logStream);
+    displayVectorU8('MESSAGE', messageArray, logStream);
 
-// Optionally, output the hexadecimal string representation of the keys and message
-console.log('const ADMIN_PUBKEY_HEX: string = "0x' + publicKey.toString('hex') + '";');
-console.log('const ADMIN_PRIVKEY_HEX: string = "0x' + privateKey.toString('hex') + '";');
-console.log('const MESSAGE_HEX: string = "0x' + Buffer.from(message, 'utf-8').toString('hex') + '";');
+    // Display the hexadecimal representations
+    displayHex('ADMIN_PUBKEY', Buffer.from(publicKey), logStream);
+    displayHex('ADMIN_PRIVKEY', Buffer.from(privateKey), logStream);
+    displayHex('MESSAGE', Buffer.from(message, 'utf-8'), logStream);
+
+    logStream.end(); // Close the file stream after writing
+}
+
+// Run the function
+generateAndDisplay();
