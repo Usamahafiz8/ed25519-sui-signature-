@@ -1,6 +1,6 @@
 {
+  "type": "module",
   "dependencies": {
-    "ed25519": "^0.0.5",
-    "tweetnacl": "^1.0.3"
+    "@mysten/sui": "^1.21.2"
   }
 }
